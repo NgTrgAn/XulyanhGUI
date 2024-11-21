@@ -1,0 +1,625 @@
+import tkinter as tk
+from tkinter import ttk, filedialog, messagebox
+from PIL import Image, ImageTk
+import numpy as np
+from skimage.util import random_noise
+from skimage.metrics import peak_signal_noise_ratio, structural_similarity
+from scipy.ndimage import gaussian_filter
+import matplotlib.pyplot as plt
+from skimage import exposure 
+import tkinter as tk
+from tkinter import ttk, filedialog, messagebox
+from PIL import Image, ImageTk
+import numpy as np
+from skimage.util import random_noise
+from skimage.metrics import peak_signal_noise_ratio, structural_similarity
+from scipy.ndimage import gaussian_filter
+import matplotlib.pyplot as plt
+from skimage import exposure
+import cv2
+import math
+
+from scipy.fftpack import dct, idct
+
+# Các hàm xử lý ảnh từ Notebook lab 1
+def rgb2gray(rgb):
+    r, g, b = rgb[:,:,0], rgb[:,:,1], rgb[:,:,2]
+    gray = 0.2989 * r + 0.5870 * g + 0.1140 * b
+    return np.round(gray).astype(np.uint8)
+
+def gray2bin(img, threshold):
+    return np.where(img > threshold, 1, 0)
+
+def histogram(img):
+    plt.hist(img.ravel(), bins=256, range=(0, 256))
+    plt.show()
+
+def median_filter(data, kernel_size):
+    return gaussian_filter(data, kernel_size)
+
+def mean_filter(data, kernel_size):
+    return gaussian_filter(data,kernel_size/2)
+
+def calculate_psnr_ssim(original, filtered):
+    psnr_value = peak_signal_noise_ratio(original, filtered)
+    ssim_value, _ = structural_similarity(original, filtered, full=True, win_size=3) 
+    return psnr_value, ssim_value
+#########################################
+# Các hàm xử lý ảnh từ Notebook lab 2
+def robert_edge_detection(image):
+    # Convert image to grayscale
+    gray_image = np.array(image.convert("L"), dtype=np.float32)
+    gx = np.zeros_like(gray_image)
+    gy = np.zeros_like(gray_image)
+    roberts_edges = np.zeros_like(gray_image)
+
+    # Apply Robert's Cross Operator
+    for i in range(gray_image.shape[0] - 1):
+        for j in range(gray_image.shape[1] - 1):
+            gx[i, j] = gray_image[i, j] - gray_image[i + 1, j + 1]
+            gy[i, j] = gray_image[i + 1, j] - gray_image[i, j + 1]
+            roberts_edges[i, j] = min(255, np.sqrt(gx[i, j] ** 2 + gy[i, j] ** 2))
+
+    return roberts_edges.astype(np.uint8)
+
+def prewitt_edge_detection(image):
+    img = image
+    img = img.convert("L")
+    img = np.array(img, dtype=np.float32) 
+    gx = np.zeros((len(img),len(img[0])))
+    gy = np.zeros((len(img),len(img[0])))
+    img_final = np.zeros((len(img),len(img[0])))
+    for i in range(1, len(img) - 1): # Chiều cao (đại diện cho y)
+        for j in range(1, len(img[0]) - 1): # Chiều rộng (đại diện cho x)
+            gx[i, j] = (img[i - 1, j - 1] + img[i, j - 1] + img[i + 1, j - 1]) - (img[i - 1, j + 1] + img[i, j + 1] + img[i + 1, j + 1]) 
+            gy[i, j] = (img[i - 1, j - 1] + img[i - 1, j] + img[i - 1, j + 1]) - (img[i + 1, j - 1] + img[i + 1, j] + img[i + 1, j + 1]) 
+            img_final[i, j] =min(255, np.sqrt(gx[i, j]**2 + gy[i, j]**2))
+    return gx,gy,img_final
+
+def canny_edge_detection(image, threshold1, threshold2):
+    # Convert image to grayscale
+    gray_image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2GRAY)
+    # Apply Canny Edge Detection
+    edges = cv2.Canny(gray_image, threshold1, threshold2)
+    return edges
+
+def sobel_edge_detection(img):
+    img = np.array(img, dtype=np.uint8)    
+    # Chuyển ảnh thành ảnh xám
+    gray_image = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+    
+    # Định nghĩa kernel Sobel theo hướng x và y
+    sobel_kernel_x = np.array([[1, 0, -1], [2, 0, -2], [1, 0, -1]])
+    sobel_kernel_y = np.array([[1, 2, 1], [0, 0, 0], [-1, -2, -1]])
+    
+    # Tạo mảng kết quả với cùng kích thước với ảnh xám
+    sobel_result = np.zeros_like(gray_image, dtype=float)
+
+    # Tính toán độ mạnh của cạnh cho mỗi pixel
+    for i in range(1, gray_image.shape[0] - 1):
+        for j in range(1, gray_image.shape[1] - 1):
+            # Tính gradient theo hướng x và y
+            gx = np.sum(sobel_kernel_x * gray_image[i-1:i+2, j-1:j+2])
+            gy = np.sum(sobel_kernel_y * gray_image[i-1:i+2, j-1:j+2])
+            
+            # Tính cường độ cạnh và giới hạn giá trị trong khoảng 0-255
+            sobel_result[i, j] = min(255, math.sqrt(gx**2 + gy**2))
+
+    # Chuyển đổi về uint8 để dễ hiển thị
+    sobel_result = sobel_result.astype(np.uint8)
+    return sobel_result
+############################################################
+## Thuc hien nen anh lab 3##################################
+def apply_dct(block):
+    return dct(dct(block.T, norm='ortho').T, norm='ortho')
+def apply_idct(block):
+    return idct(idct(block.T, norm='ortho').T, norm='ortho')
+def pad_image(image):
+    h, w = image.shape
+    h_padded = (h + 7) // 8 * 8  # Làm tròn lên bội số của 8
+    w_padded = (w + 7) // 8 * 8
+
+    # Tạo ảnh mới có kích thước phù hợp
+    padded_image = np.zeros((h_padded, w_padded), dtype=image.dtype)
+    padded_image[:h, :w] = image  # Sao chép dữ liệu ảnh gốc vào ảnh mới
+    return padded_image
+
+def jpeg_compression(image, quant_matrix):
+    image = pad_image(image)
+    h, w = image.shape
+    compressed_image = np.zeros_like(image, dtype=np.float32)
+    # Chia ảnh thành các khối 8x8
+    for i in range(0, h, 8):
+        for j in range(0, w, 8):
+            block = image[i:i+8, j:j+8]
+            dct_block = apply_dct(block)  # DCT
+            quantized_block = np.round(dct_block / quant_matrix)  # Lượng tử hóa
+            compressed_image[i:i+8, j:j+8] = quantized_block
+
+    return compressed_image
+def jpeg_decompression(compressed_image, quant_matrix):
+    h, w = compressed_image.shape
+    decompressed_image = np.zeros_like(compressed_image, dtype=np.float32)
+
+    # Duyệt qua từng khối 8x8
+    for i in range(0, h, 8):
+        for j in range(0, w, 8):
+            quantized_block = compressed_image[i:i+8, j:j+8]
+            dequantized_block = quantized_block * quant_matrix
+            idct_block = apply_idct(dequantized_block)  # IDCT
+            decompressed_image[i:i+8, j:j+8] = idct_block
+    return np.clip(decompressed_image, 0, 255).astype(np.uint8)
+############################################################
+# Tạo giao diện Tkinter
+class ImageProcessingApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("GUI - Image Processing")
+        self.root.geometry("1000x600")
+        self.display_size = (300, 300)
+
+        # Tab LAB1
+        self.tabControl = ttk.Notebook(root)
+        self.lab1_tab = ttk.Frame(self.tabControl)
+        self.tabControl.add(self.lab1_tab, text="LAB1")
+        self.tabControl.pack(expand=1, fill="both")
+        # Tab LAB2
+        self.lab2_tab = ttk.Frame(self.tabControl)
+        self.tabControl.add(self.lab2_tab, text="LAB2")
+        self.tabControl.pack(expand=1, fill="both")
+        # Tab LAB3
+        self.lab3_tab = ttk.Frame(self.tabControl)
+        self.tabControl.add(self.lab3_tab, text="LAB3")
+        self.tabControl.pack(expand=1, fill="both")
+
+        #############################################   LAB1    #############################################
+        # Cột bên trái để hiển thị ảnh
+        self.image_panel = tk.Label(self.lab1_tab)
+        self.image_panel.grid(row=0, column=0, rowspan=15, padx=10, pady=10)
+
+        # Cột bên phải với các nút chức năng
+        # Chọn file ảnh
+        self.img_label = tk.Label(self.lab1_tab, text="Choose an image:")
+        self.img_label.grid(row=0, column=1, sticky="w", padx=5)
+        
+        self.img_button = tk.Button(self.lab1_tab, text="Browse", command=self.load_image)
+        self.img_button.grid(row=0, column=2, padx=5, pady=5)
+
+        # Chọn ngưỡng và kích thước bộ lọc
+        self.threshold_label = tk.Label(self.lab1_tab, text="Threshold:")
+        self.threshold_label.grid(row=1, column=1, sticky="w", padx=5)
+        
+        self.threshold_entry = tk.Entry(self.lab1_tab)
+        self.threshold_entry.grid(row=1, column=2, padx=5, pady=5)
+        
+        self.filter_size_label = tk.Label(self.lab1_tab, text="Filter Size:")
+        self.filter_size_label.grid(row=2, column=1, sticky="w", padx=5)
+        
+        self.filter_size_entry = tk.Entry(self.lab1_tab)
+        self.filter_size_entry.grid(row=2, column=2, padx=5, pady=5)
+
+        # Các nút chức năng
+        self.rgb2gray_button = tk.Button(self.lab1_tab, text="Convert RGB to Gray", command=self.apply_rgb2gray)
+        self.rgb2gray_button.grid(row=3, column=2, sticky="ew", padx=5, pady=5)
+
+        self.gray2bin_button = tk.Button(self.lab1_tab, text="Convert Gray to Binary", command=self.apply_gray2bin)
+        self.gray2bin_button.grid(row=4, column=2, sticky="ew", padx=5, pady=5)
+
+        self.histogram_button = tk.Button(self.lab1_tab, text="Show Histogram", command=self.show_histogram)
+        self.histogram_button.grid(row=5, column=2, sticky="ew", padx=5, pady=5)
+
+        self.mean_filter_button = tk.Button(self.lab1_tab, text="Apply Mean Filter", command=self.apply_mean_filter)
+        self.mean_filter_button.grid(row=6, column=2, sticky="ew", padx=5, pady=5)
+
+        self.median_filter_button = tk.Button(self.lab1_tab, text="Apply Median Filter", command=self.apply_median_filter)
+        self.median_filter_button.grid(row=7, column=2, sticky="ew", padx=5, pady=5)
+
+        self.psnr_ssim_button = tk.Button(self.lab1_tab, text="Calculate PSNR and SSIM", command=self.calculate_metrics)
+        self.psnr_ssim_button.grid(row=8, column=2, sticky="ew", padx=5, pady=5)
+
+        self.extract_object_button = tk.Button(self.lab1_tab, text="Extract Object", command=self.extract_object)
+        self.extract_object_button.grid(row=9, column=2, sticky="ew", padx=5, pady=5)
+        
+        self.reduce_brightness_button = tk.Button(self.lab1_tab, text="Reduce Brightness", command=self.reduce_brightness)
+        self.reduce_brightness_button.grid(row=10, column=2, sticky="ew", padx=5, pady=5)
+        
+        self.sequence_filter_button = tk.Button(self.lab1_tab, text="Apply Sequential Filters", command=self.open_filter_window)
+        self.sequence_filter_button.grid(row=11, column=2, sticky="ew", padx=5, pady=5)
+        
+        self.gauss_filter_button = tk.Button(self.lab1_tab, text="Apply Gauss Filter", command=self.apply_gauss_filter)
+        self.gauss_filter_button.grid(row=12, column=2, sticky="ew", padx=5, pady=5)
+        
+        self.histogram_equalization_button = tk.Button(self.lab1_tab, text="Histogram equalization", command=self.apply_histogram_equalization)
+        self.histogram_equalization_button.grid(row=13, column=2, sticky="ew", padx=5, pady=5)
+
+   
+        self.salt_pepper_noise_button = tk.Button(self.lab1_tab, text="Add Salt and Pepper Noise", command=self.add_salt_pepper_noise)
+        self.salt_pepper_noise_button.grid(row=14, column=2, sticky="ew", padx=5, pady=5)
+
+        
+        self.gaussian_noise_button = tk.Button(self.lab1_tab, text="Add Gaussian Noise", command=self.add_gaussian_noise)
+        self.gaussian_noise_button.grid(row=15, column=2, sticky="ew", padx=5, pady=5)
+
+
+    ## biến lab 1
+        self.original_img = None
+        self.processed_img = None
+    ## biến lab 2
+        self.image_original_lab2 = None
+    ## biến lab 3
+        self.image_original_lab3 = None
+    #################################################   LAB2   #################################################
+    # Cột bên trái để hiển thị ảnh
+        self.image_panel_lab2 = tk.Label(self.lab2_tab)
+        self.image_panel_lab2.grid(row=0, column=0, rowspan=15, padx=10, pady=10)
+
+        # Cột bên phải với các nút chức năng
+        # Chọn file ảnh
+        self.img_label = tk.Label(self.lab2_tab, text="Choose an image:")
+        self.img_label.grid(row=0, column=1, sticky="w", padx=5)
+        
+        self.img_button = tk.Button(self.lab2_tab, text="Browse", command=self.load_image)
+        self.img_button.grid(row=0, column=2, padx=5, pady=5)
+
+        self.prewitt_edge_detection_button = tk.Button(self.lab2_tab, text="prewitt edge detection", command=self.apply_prewitt_edge_detection)
+        self.prewitt_edge_detection_button.grid(row=5, column=2, sticky="ew", padx=5, pady=5)
+        
+        self.prewitt_edge_detection_button = tk.Button(self.lab2_tab, text="Add noise and Detect Canny", command=self.apply_add_noise_and_detect_canny)
+        self.prewitt_edge_detection_button.grid(row=6, column=2, sticky="ew", padx=5, pady=5)
+
+        self.prewitt_edge_detection_button = tk.Button(self.lab2_tab, text="Canny Edge Detection", command=self.apply_canny_edge_detection)
+        self.prewitt_edge_detection_button.grid(row=7, column=2, sticky="ew", padx=5, pady=5)
+        
+        self.prewitt_edge_detection_button = tk.Button(self.lab2_tab, text="Sobel Edge Detection", command=self.apply_sobel_edge_detection)
+        self.prewitt_edge_detection_button.grid(row=8, column=2, sticky="ew", padx=5, pady=5)
+
+        self.robert_edge_detection_button = tk.Button(self.lab2_tab, text="Robert Edge Detection", command=self.apply_robert_edge_detection)
+        self.robert_edge_detection_button.grid(row=9, column=2, sticky="ew", padx=5, pady=5)    
+
+        #chọn ngưỡng cho canny
+        #Entry for threshold1
+        self.threshold1_label = tk.Label(self.lab2_tab, text="Threshold low for canny:")
+        self.threshold1_label.grid(row=3, column=2, padx=5, pady=5, sticky="e")
+        self.threshold1_entry = tk.Entry(self.lab2_tab)
+        self.threshold1_entry.grid(row=3, column=3, padx=5, pady=5)
+
+        # Entry for threshold2
+        self.threshold2_label = tk.Label(self.lab2_tab, text="Threshold high for canny:")
+        self.threshold2_label.grid(row=4, column=2, padx=5, pady=5, sticky="e")
+        self.threshold2_entry = tk.Entry(self.lab2_tab)
+        self.threshold2_entry.grid(row=4, column=3, padx=5, pady=5)
+    ################################################################################################################################
+    ####################################################LAB3#######################################################################
+        self.image_panel_lab3 = tk.Label(self.lab3_tab)
+        self.image_panel_lab3.grid(row=0, column=0, rowspan=15, padx=10, pady=10)
+
+        # Cót bên phải với các nút chức năng
+        # Chọn file ảnh
+        self.img_label = tk.Label(self.lab3_tab, text="Choose an image:")
+        self.img_label.grid(row=0, column=1, sticky="w", padx=5)
+        
+        self.img_button = tk.Button(self.lab3_tab, text="Browse", command=self.load_image)
+        self.img_button.grid(row=0, column=2, padx=5, pady=5)
+
+        self.nen_anh_jpeg_button = tk.Button(self.lab3_tab, text="JPEG Compression", command=self.nen_anh_jpeg)
+        self.nen_anh_jpeg_button.grid(row=5, column=2, sticky="ew", padx=5, pady=5)
+
+       
+    #############################################################################################################################
+    
+    
+    #Các Hàm con sử dụng trong các lab
+    ############################################   LAB1    ############################################
+    def open_filter_window(self):
+        # Tạo cửa sổ mới
+        filter_window = tk.Toplevel(self.root)
+        filter_window.title("Choose Filter Sequence")
+        filter_window.geometry("300x300")
+        
+        # Các nút lọc
+        tk.Button(filter_window, text="Median -> Gaussian -> Mean", command=self.median_gaussian_mean).pack(pady=5)
+        tk.Button(filter_window, text="Median -> Mean -> Gaussian", command=self.median_mean_gaussian).pack(pady=5)
+        tk.Button(filter_window, text="Gaussian -> Median -> Mean", command=self.gaussian_median_mean).pack(pady=5)
+        tk.Button(filter_window, text="Gaussian -> Mean -> Median", command=self.gaussian_mean_median).pack(pady=5)
+        tk.Button(filter_window, text="Mean -> Median -> Gaussian", command=self.mean_median_gaussian).pack(pady=5)
+        tk.Button(filter_window, text="Mean -> Gaussian -> Median", command=self.mean_gaussian_median).pack(pady=5)
+        
+        # Nút quay lại
+        tk.Button(filter_window, text="Back", command=filter_window.destroy).pack(pady=20)
+
+        # Thêm nút vào giao diện chính
+
+    def load_image(self):
+        file_path = filedialog.askopenfilename()
+        if file_path:
+            self.original_img = Image.open(file_path).convert('RGB')
+            # Resize image to fit within 300x300 pixels for display
+            display_size = (300, 300)
+            img_resized = self.original_img.resize(display_size, Image.LANCZOS)
+            img_display = ImageTk.PhotoImage(img_resized)
+            # Load image based on the active tab
+            current_tab_id = self.tabControl.select()
+            if current_tab_id == str(self.lab1_tab):
+                self.original_img = img_resized
+                self.image_panel.config(image=img_display)
+                self.image_panel.image = img_display
+            elif current_tab_id == str(self.lab2_tab):
+                self.image_original_lab2 = img_resized
+                self.image_panel_lab2.config(image=img_display)
+                self.image_panel_lab2.image = img_display
+            elif current_tab_id == str(self.lab3_tab):
+                self.image_original_lab3 = img_resized
+                self.image_panel_lab3.config(image=img_display)
+                self.image_panel_lab3.image = img_display
+            
+
+    def apply_rgb2gray(self):
+        if self.original_img:
+            img_array = np.array(self.original_img)
+            gray_img = rgb2gray(img_array)
+            gray_img_resized = self.resize_to_display(gray_img)
+            self.processed_img = gray_img_resized
+            self.show_image(gray_img_resized)
+
+    def apply_gray2bin(self):
+        if self.processed_img is not None:
+            threshold = int(self.threshold_entry.get() or 128)
+            binary_img = gray2bin(self.processed_img, threshold)
+            self.show_image(binary_img * 255)
+
+    def show_histogram(self):
+        if self.processed_img is not None:
+            histogram(self.processed_img)
+
+    def apply_mean_filter(self):
+        if self.processed_img is not None:
+            kernel_size = int(self.filter_size_entry.get() or 3)
+            filtered_img = np.array(self.original_img)
+            filtered_img = mean_filter(filtered_img, kernel_size)
+            self.show_image(filtered_img)
+
+    def apply_median_filter(self):
+        if self.processed_img is not None:
+            kernel_size = int(self.filter_size_entry.get() or 3)
+            filtered_img = np.array(self.original_img)
+            filtered_img = median_filter(filtered_img, kernel_size)
+            self.show_image(filtered_img)
+
+    def calculate_metrics(self):
+        if self.original_img is not None and self.processed_img is not None:
+            processed_resized = np.resize(self.processed_img, np.array(self.original_img).shape)
+            psnr, ssim = calculate_psnr_ssim(np.array(self.original_img), processed_resized)
+            messagebox.showinfo("Metrics", f"PSNR: {psnr}\nSSIM: {ssim}")
+
+    def resize_to_display(self, img_array):
+        img = Image.fromarray(img_array.astype(np.uint8))
+        resized_img = img.resize(self.display_size, Image.LANCZOS)
+        return np.array(resized_img)
+
+    def show_image(self, img_array):
+        img_array_resized = self.resize_to_display(img_array)
+        img = Image.fromarray(np.uint8(img_array_resized)).convert('L')
+        img_display = ImageTk.PhotoImage(img)
+
+        current_tab_id = self.tabControl.select()
+
+        ####### chọn tab hiển thị #######
+        if current_tab_id == str(self.lab1_tab):
+            self.image_panel.config(image=img_display)
+            self.image_panel.image = img_display
+        elif current_tab_id == str(self.lab2_tab):
+            self.image_panel_lab2.config(image=img_display)
+            self.image_panel_lab2.image = img_display
+    
+    # Thêm hàm tách vật thể
+    def extract_object(self):
+        if self.processed_img is not None:
+            threshold = int(self.threshold_entry.get() or 128)
+            binary_img = gray2bin(self.processed_img, threshold)
+            # Nhân ảnh nhị phân với ảnh xám để chỉ giữ lại phần có vật thể
+            object_img = binary_img * self.processed_img
+            self.show_image(object_img)
+    # Thêm hàm giảm độ sáng
+    def reduce_brightness(self):
+        if self.processed_img is not None:
+            brightness_factor = 0.5  # Hệ số giảm sáng, có thể điều chỉnh
+            reduced_brightness_img = (self.processed_img * brightness_factor).clip(0, 255)
+            self.show_image(reduced_brightness_img)
+    #
+    def median_gaussian_mean(self):
+        if self.processed_img is not None:
+            # Lấy giá trị kernel từ người dùng
+            kernel_size = int(self.filter_size_entry.get() or 3)
+            # Bước 1: Áp dụng bộ lọc trung vị
+            median_filtered_img = median_filter(self.processed_img, kernel_size)
+            # Bước 2: Áp dụng bộ lọc Gaussian
+            gaussian_filtered_img = gaussian_filter(median_filtered_img, kernel_size / 2)
+            # Bước 3: Áp dụng bộ lọc trung bình
+            mean_filtered_img = mean_filter(gaussian_filtered_img, kernel_size)
+            # Hiển thị ảnh đã lọc
+            self.show_image(mean_filtered_img)
+    def median_mean_gaussian(self):
+        if self.processed_img is not None:
+            kernel_size = int(self.filter_size_entry.get() or 3)
+            # Bước 1: Median filter
+            median_filtered_img = median_filter(self.processed_img,kernel_size)
+            # Bước 2: Mean filter
+            mean_filtered_img = mean_filter(median_filtered_img,kernel_size)
+            # Bước 3: Gaussian filter
+            gaussian_filtered_img = gaussian_filter(mean_filtered_img, sigma=kernel_size / 2)
+            
+            # Hiển thị kết quả
+            self.show_image(gaussian_filtered_img)
+    def gaussian_median_mean(self):
+        if self.processed_img is not None:
+            kernel_size = int(self.filter_size_entry.get() or 3)
+            
+            # Bước 1: Gaussian filter
+            gaussian_filtered_img = gaussian_filter(self.processed_img, sigma=kernel_size / 2)
+            
+            # Bước 2: Median filter
+            median_filtered_img = median_filter(gaussian_filtered_img,kernel_size)
+            
+            # Bước 3: Mean filter
+            mean_filtered_img = mean_filter(median_filtered_img,kernel_size)
+            
+            # Hiển thị kết quả
+            self.show_image(mean_filtered_img)
+    def gaussian_mean_median(self):
+        if self.processed_img is not None:
+            kernel_size = int(self.filter_size_entry.get() or 3)
+            
+            # Bước 1: Gaussian filter
+            gaussian_filtered_img = gaussian_filter(self.processed_img, sigma=kernel_size / 2)
+            
+            # Bước 2: Mean filter
+            mean_filtered_img = mean_filter(gaussian_filtered_img,kernel_size)
+            
+            # Bước 3: Median filter
+            median_filtered_img = median_filter(mean_filtered_img,kernel_size)
+            
+            # Hiển thị kết quả
+            self.show_image(median_filtered_img)
+    def mean_median_gaussian(self):
+        if self.processed_img is not None:
+            kernel_size = int(self.filter_size_entry.get() or 3)
+            
+            # Bước 1: Mean filter
+            mean_filtered_img = mean_filter(self.processed_img,kernel_size)
+            
+            # Bước 2: Median filter
+            median_filtered_img = median_filter(mean_filtered_img,kernel_size)
+            
+            # Bước 3: Gaussian filter
+            gaussian_filtered_img = gaussian_filter(median_filtered_img, sigma=kernel_size / 2)
+            
+            # Hiển thị kết quả
+            self.show_image(gaussian_filtered_img)
+    def mean_gaussian_median(self):
+        if self.processed_img is not None:
+            kernel_size = int(self.filter_size_entry.get() or 3)
+            
+            # Bước 1: Mean filter
+            mean_filtered_img = mean_filter(self.processed_img,kernel_size)
+            
+            # Bước 2: Gaussian filter
+            gaussian_filtered_img = gaussian_filter(mean_filtered_img, sigma=kernel_size / 2)
+            
+            # Bước 3: Median filter
+            median_filtered_img = median_filter(gaussian_filtered_img,kernel_size)
+            
+            # Hiển thị kết quả
+            self.show_image(median_filtered_img)
+
+    def apply_gauss_filter(self):
+        if self.processed_img is not None:
+            kernel_size = int(self.filter_size_entry.get() or 3)
+            gauss_img = gaussian_filter(self.processed_img, sigma=kernel_size / 2)
+            self.show_image(gauss_img) 
+     
+    def apply_histogram_equalization(self):                  
+        if self.processed_img is not None:
+            # Ensure the image is in the correct format for histogram equalization
+            img_float = self.processed_img / 255.0  # Normalize to [0, 1] range
+            equalized_img = exposure.equalize_hist(img_float) * 255  # Apply equalization and scale back to [0, 255]
+            self.show_image(equalized_img.astype(np.uint8))  # Convert to uint8 for display
+    def add_salt_pepper_noise(self):
+        if self.processed_img is not None:
+            # Thêm nhiễu hạt tiêu
+            noisy_img = random_noise(self.processed_img, mode='s&p', amount=0.05)  # mức độ nhiễu
+            noisy_img = (noisy_img * 255).astype(np.uint8)  # chuyển đổi sang uint8
+            self.processed_img = noisy_img  # cập nhật processed_img với ảnh có nhiễu
+            self.show_image(noisy_img)  # hiển thị ảnh
+
+    def add_gaussian_noise(self):
+        if self.processed_img is not None:
+            # Thêm nhiễu Gaussian
+            noisy_img = random_noise(self.processed_img, mode='gaussian', var=0.01)  # phương sai của nhiễu
+            noisy_img = (noisy_img * 255).astype(np.uint8)  # chuyển đổi sang uint8
+            self.processed_img = noisy_img  # cập nhật processed_img với ảnh có nhiễu
+            self.show_image(noisy_img)  # hiển thị ảnh
+################################################################################################################################
+######################################################### LAB 2 ###############################################################
+
+    def apply_prewitt_edge_detection(self):
+        if self.image_original_lab2 is not None:
+            # Áp dụng bộ lọc Prewitt để phát hiện cạnh
+            gx, gy, prewitt_edges = prewitt_edge_detection(self.image_original_lab2)
+            # Hiển thị kết quả ảnh cạnh đã phát hiện bằng Prewitt
+            self.show_image(prewitt_edges)
+    def apply_add_noise_and_detect_canny(self):
+        if self.image_original_lab2 is not None:
+            # Thêm nhiễu muối tiêu
+            img_arr = np.array(self.image_original_lab2)
+            sp_img = random_noise(img_arr, mode='s&p', amount=0.03)
+            # Thêm nhiễu Gauss
+            gauss_img = random_noise(sp_img, mode='gaussian', mean=0, var=0.02)
+            img_eq = np.rint(255 * exposure.equalize_hist(gauss_img, nbins=256)).astype(np.uint8)
+            # Loại bỏ nhiễu bằng bộ lọc trung bình
+            remove_noise1 = mean_filter(img_eq,3)
+            remove_noise2 = gaussian_filter(remove_noise1,sigma=2, radius=2)
+            # Loại bỏ nhiễu bằng bộ lọc Gauss
+            remove_noise2 = gaussian_filter(remove_noise1, sigma=2, radius=2)
+            aff = Image.fromarray((remove_noise2 * 255).astype(np.uint8))  # Scale to 0-255
+            canny_edge = cv2.Canny(np.array(aff), 20, 70)
+            self.show_image(canny_edge)  # hiển thị ảnh
+    def apply_canny_edge_detection(self):
+        if self.image_original_lab2:
+            # Get threshold values from entry boxes, with default values if empty
+            try:
+                threshold1 = int(self.threshold1_entry.get()) if self.threshold1_entry.get() else 100
+                threshold2 = int(self.threshold2_entry.get()) if self.threshold2_entry.get() else 200
+            except ValueError:
+                # Handle invalid input, such as non-integer values
+                messagebox.showerror("Invalid Input", "Please enter valid integers for thresholds.")
+                return
+            edges = canny_edge_detection(self.image_original_lab2, threshold1, threshold2)
+            self.show_image(edges)
+            
+    def apply_sobel_edge_detection(self):
+        if self.image_original_lab2 is not None:
+            # Áp dụng hàm sobel_edge_detection để phát hiện cạnh    
+            sobel_edges = sobel_edge_detection(self.image_original_lab2)
+            # Hiển thị kết quả ảnh cạnh đã phát hiện
+            self.show_image(sobel_edges)
+    def apply_robert_edge_detection(self):
+        if self.image_original_lab2 is not None:
+            # Apply Robert's edge detection
+            roberts_edges = robert_edge_detection(self.image_original_lab2)
+            # Display the result
+            self.show_image(roberts_edges)
+################################################################################################################################
+########################################################## LAB 3 ###############################################################
+    def nen_anh_jpeg(self):
+        # Đọc ảnh đầu vào
+        image = rgb2gray(np.array(self.image_original_lab3))
+
+        # Ma trận lượng tử hóa (dùng cho JPEG tiêu chuẩn)
+        quant_matrix = np.array([
+            [16, 11, 10, 16, 24, 40, 51, 61],
+            [12, 12, 14, 19, 26, 58, 60, 55],
+            [14, 13, 16, 24, 40, 57, 69, 56],
+            [14, 17, 22, 29, 51, 87, 80, 62],
+            [18, 22, 37, 56, 68, 109, 103, 77],
+            [24, 35, 55, 64, 81, 104, 113, 92],
+            [49, 64, 78, 87, 103, 121, 120, 101],
+            [72, 92, 95, 98, 112, 100, 103, 99]
+        ])
+
+        # Nén
+        compressed_image = jpeg_compression(image, quant_matrix)
+
+        # Giải nén
+        decompressed_image = jpeg_decompression(compressed_image, quant_matrix)
+
+        # Lưu ảnh
+        cv2.imwrite('compressed_image.jpg', decompressed_image)
+        cv2.imshow('Original', image)
+        cv2.imshow('Decompressed', decompressed_image)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+################################################################################################################################
+# Khởi chạy giao diện
+root = tk.Tk()
+app = ImageProcessingApp(root)
+root.mainloop()
