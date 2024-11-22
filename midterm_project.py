@@ -18,6 +18,7 @@ import matplotlib.pyplot as plt
 from skimage import exposure
 import cv2
 import math
+from math import log10
 
 from scipy.fftpack import dct, idct
 
@@ -303,6 +304,9 @@ class ImageProcessingApp:
 
         self.nen_anh_jpeg_button = tk.Button(self.lab3_tab, text="JPEG Compression", command=self.nen_anh_jpeg)
         self.nen_anh_jpeg_button.grid(row=5, column=2, sticky="ew", padx=5, pady=5)
+        
+        self.tinh_PSNR_button = tk.Button(self.lab3_tab, text="Calculate PSNR", command=self.tinh_PSNR)
+        self.tinh_PSNR_button.grid(row=6, column=2, sticky="ew", padx=5, pady=5)
 
        
     #############################################################################################################################
@@ -618,6 +622,52 @@ class ImageProcessingApp:
         cv2.imshow('Decompressed', decompressed_image)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
+    
+    def tinh_PSNR(self):
+        if self.image_original_lab3 is None:
+            messagebox.showerror("Error", "No image loaded for calculation.")
+            return
+        image = rgb2gray(np.array(self.image_original_lab3))
+        max_pixel = 255.0
+        quality_levels = [95]
+        psnr_results = []
+        quant_matrix = np.array([
+            [16, 11, 10, 16, 24, 40, 51, 61],
+            [12, 12, 14, 19, 26, 58, 60, 55],
+            [14, 13, 16, 24, 40, 57, 69, 56],
+            [14, 17, 22, 29, 51, 87, 80, 62],
+            [18, 22, 37, 56, 68, 109, 103, 77],
+            [24, 35, 55, 64, 81, 104, 113, 92],
+            [49, 64, 78, 87, 103, 121, 120, 101],
+            [72, 92, 95, 98, 112, 100, 103, 99]
+        ])
+        
+        for quality in quality_levels:
+            compressed_image = jpeg_compression(image, quant_matrix)
+            
+            # Đảm bảo kích thước khớp nhau
+            if image.shape != compressed_image.shape:
+                min_height = min(image.shape[0], compressed_image.shape[0])
+                min_width = min(image.shape[1], compressed_image.shape[1])
+                # Cắt cả hai ảnh về cùng kích thước nhỏ nhất
+                image = image[:min_height, :min_width]
+                compressed_image = compressed_image[:min_height, :min_width]
+            
+            mse = np.mean((image - compressed_image) ** 2)
+            if mse == 0:
+                psnr = float('inf')
+            else:
+                psnr = 10 * log10(max_pixel**2 / mse)
+
+        psnr_results.append((quality, psnr))
+        
+        result_message = "PSNR values of picture after compressed with original:\n"
+        for quality, psnr in psnr_results:
+            result_message += f"PSNR = {psnr:.2f} dB\n"
+        messagebox.showinfo("PSNR Results", result_message)
+        return psnr_results
+
+
 ################################################################################################################################
 # Khởi chạy giao diện
 root = tk.Tk()
