@@ -215,20 +215,20 @@ class ImageProcessingApp:
         self.median_filter_button = tk.Button(self.lab1_tab, text="Apply Median Filter", command=self.apply_median_filter)
         self.median_filter_button.grid(row=7, column=2, sticky="ew", padx=5, pady=5)
 
+        self.gauss_filter_button = tk.Button(self.lab1_tab, text="Apply Gauss Filter", command=self.apply_gauss_filter)
+        self.gauss_filter_button.grid(row=8, column=2, sticky="ew", padx=5, pady=5)
+
+        self.sequence_filter_button = tk.Button(self.lab1_tab, text="Apply Sequential Filters", command=self.open_filter_window)
+        self.sequence_filter_button.grid(row=9, column=2, sticky="ew", padx=5, pady=5)
+
         self.psnr_ssim_button = tk.Button(self.lab1_tab, text="Calculate PSNR and SSIM", command=self.calculate_metrics)
-        self.psnr_ssim_button.grid(row=8, column=2, sticky="ew", padx=5, pady=5)
+        self.psnr_ssim_button.grid(row=10, column=2, sticky="ew", padx=5, pady=5)
 
         self.extract_object_button = tk.Button(self.lab1_tab, text="Extract Object", command=self.extract_object)
-        self.extract_object_button.grid(row=9, column=2, sticky="ew", padx=5, pady=5)
+        self.extract_object_button.grid(row=11, column=2, sticky="ew", padx=5, pady=5)
         
         self.reduce_brightness_button = tk.Button(self.lab1_tab, text="Reduce Brightness", command=self.reduce_brightness)
-        self.reduce_brightness_button.grid(row=10, column=2, sticky="ew", padx=5, pady=5)
-        
-        self.sequence_filter_button = tk.Button(self.lab1_tab, text="Apply Sequential Filters", command=self.open_filter_window)
-        self.sequence_filter_button.grid(row=11, column=2, sticky="ew", padx=5, pady=5)
-        
-        self.gauss_filter_button = tk.Button(self.lab1_tab, text="Apply Gauss Filter", command=self.apply_gauss_filter)
-        self.gauss_filter_button.grid(row=12, column=2, sticky="ew", padx=5, pady=5)
+        self.reduce_brightness_button.grid(row=12, column=2, sticky="ew", padx=5, pady=5)
         
         self.histogram_equalization_button = tk.Button(self.lab1_tab, text="Histogram equalization", command=self.apply_histogram_equalization)
         self.histogram_equalization_button.grid(row=13, column=2, sticky="ew", padx=5, pady=5)
@@ -262,7 +262,7 @@ class ImageProcessingApp:
         self.img_button = tk.Button(self.lab2_tab, text="Browse", command=self.load_image)
         self.img_button.grid(row=0, column=2, padx=5, pady=5)
 
-        self.prewitt_edge_detection_button = tk.Button(self.lab2_tab, text="prewitt edge detection", command=self.apply_prewitt_edge_detection)
+        self.prewitt_edge_detection_button = tk.Button(self.lab2_tab, text="Prewitt edge detection", command=self.apply_prewitt_edge_detection)
         self.prewitt_edge_detection_button.grid(row=5, column=2, sticky="ew", padx=5, pady=5)
         
         self.prewitt_edge_detection_button = tk.Button(self.lab2_tab, text="Add noise and Detect Canny", command=self.apply_add_noise_and_detect_canny)
