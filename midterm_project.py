@@ -230,6 +230,7 @@ class ImageProcessingApp:
         self.reduce_brightness_button = tk.Button(self.lab1_tab, text="Reduce Brightness", command=self.reduce_brightness)
         self.reduce_brightness_button.grid(row=12, column=2, sticky="ew", padx=5, pady=5)
         
+        
         self.histogram_equalization_button = tk.Button(self.lab1_tab, text="Histogram equalization", command=self.apply_histogram_equalization)
         self.histogram_equalization_button.grid(row=13, column=2, sticky="ew", padx=5, pady=5)
 
@@ -378,15 +379,15 @@ class ImageProcessingApp:
     def apply_mean_filter(self):
         if self.processed_img is not None:
             kernel_size = int(self.filter_size_entry.get() or 3)
-            filtered_img = np.array(self.original_img)
-            filtered_img = mean_filter(filtered_img, kernel_size)
+            filtered_img = mean_filter(self.processed_img, kernel_size)
+            self.processed_img = filtered_img
             self.show_image(filtered_img)
 
     def apply_median_filter(self):
         if self.processed_img is not None:
             kernel_size = int(self.filter_size_entry.get() or 3)
-            filtered_img = np.array(self.original_img)
-            filtered_img = median_filter(filtered_img, kernel_size)
+            filtered_img = median_filter(self.processed_img, kernel_size)
+            self.processed_img = filtered_img
             self.show_image(filtered_img)
 
     def calculate_metrics(self):
