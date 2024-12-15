@@ -1,3 +1,4 @@
+
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 from PIL import Image, ImageTk
@@ -293,7 +294,7 @@ class ImageProcessingApp:
         self.image_panel_lab3 = tk.Label(self.lab3_tab)
         self.image_panel_lab3.grid(row=0, column=0, rowspan=15, padx=10, pady=10)
 
-        # Cột bên phải với các nút chức năng
+        # Cót bên phải với các nút chức năng
         # Chọn file ảnh
         self.img_label = tk.Label(self.lab3_tab, text="Choose an image:")
         self.img_label.grid(row=0, column=1, sticky="w", padx=5)
@@ -673,7 +674,7 @@ class ImageProcessingApp:
                 image = image[:min_height, :min_width]
                 compressed_image = compressed_image[:min_height, :min_width]
             
-            mse = np.mean((image - compressed_image) ** 2)
+            mse = np.mean((image - compressed_image) ** 2)/2
             if mse == 0:
                 psnr = float('inf')
             else:
