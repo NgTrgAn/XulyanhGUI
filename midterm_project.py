@@ -233,6 +233,9 @@ class ImageProcessingApp:
         self.gaussian_noise_button = tk.Button(self.lab1_tab, text="Add Gaussian Noise", command=self.add_gaussian_noise)
         self.gaussian_noise_button.grid(row=15, column=2, sticky="ew", padx=5, pady=5)
 
+        # Add the reset button in the LAB1 tab
+        self.reset_button = tk.Button(self.lab1_tab, text="Reset Image", command=self.reset_image)
+        self.reset_button.grid(row=16, column=2, sticky="ew", padx=5, pady=5)
 
     ## biến lab 1
         self.original_img = None
@@ -281,6 +284,10 @@ class ImageProcessingApp:
         self.threshold2_label.grid(row=4, column=2, padx=5, pady=5, sticky="e")
         self.threshold2_entry = tk.Entry(self.lab2_tab)
         self.threshold2_entry.grid(row=4, column=3, padx=5, pady=5)
+
+        # Add the reset button in the LAB2 tab
+        self.reset_button_lab2 = tk.Button(self.lab2_tab, text="Reset Image", command=self.reset_image_lab2)
+        self.reset_button_lab2.grid(row=10, column=2, sticky="ew", padx=5, pady=5)
     ################################################################################################################################
     ####################################################LAB3#######################################################################
         self.image_panel_lab3 = tk.Label(self.lab3_tab)
@@ -300,6 +307,9 @@ class ImageProcessingApp:
         self.tinh_PSNR_button = tk.Button(self.lab3_tab, text="Calculate PSNR", command=self.tinh_PSNR)
         self.tinh_PSNR_button.grid(row=6, column=2, sticky="ew", padx=5, pady=5)
 
+        # Add the reset button in the LAB3 tab
+        self.reset_button_lab3 = tk.Button(self.lab3_tab, text="Reset Image", command=self.reset_image_lab3)
+        self.reset_button_lab3.grid(row=7, column=2, sticky="ew", padx=5, pady=5)
        
     #############################################################################################################################
     
@@ -534,6 +544,22 @@ class ImageProcessingApp:
             noisy_img = (noisy_img * 255).astype(np.uint8)  # chuyển đổi sang uint8
             self.processed_img = noisy_img  # cập nhật processed_img với ảnh có nhiễu
             self.show_image(noisy_img)  # hiển thị ảnh
+
+    # Implement the reset_image function
+    def reset_image(self):
+        if self.original_img:
+            self.processed_img = np.array(self.original_img)
+            self.show_image(self.processed_img)
+
+    def reset_image_lab2(self):
+        if self.image_original_lab2:
+            self.processed_img = np.array(self.image_original_lab2)
+            self.show_image(self.processed_img)
+
+    def reset_image_lab3(self):
+        if self.image_original_lab3:
+            self.processed_img = np.array(self.image_original_lab3)
+            self.show_image(self.processed_img)
 ################################################################################################################################
 ######################################################### LAB 2 ###############################################################
 
