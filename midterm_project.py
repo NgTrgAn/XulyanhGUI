@@ -635,9 +635,11 @@ class ImageProcessingApp:
         decompressed_image = jpeg_decompression(compressed_image, quant_matrix)
 
         # Lưu ảnh
-        cv2.imwrite('compressed_image.jpg', decompressed_image)
+        cv2.imwrite('compressed_image.jpg', compressed_image)
+        cv2.imwrite('decompressed_image.jpg', decompressed_image)
         cv2.imshow('Original', image)
         cv2.imshow('Decompressed', decompressed_image)
+        cv2.imshow('Compressed', compressed_image)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
     
