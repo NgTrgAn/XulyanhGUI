@@ -7,15 +7,6 @@ from skimage.metrics import peak_signal_noise_ratio, structural_similarity
 from scipy.ndimage import gaussian_filter
 import matplotlib.pyplot as plt
 from skimage import exposure 
-import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
-from PIL import Image, ImageTk
-import numpy as np
-from skimage.util import random_noise
-from skimage.metrics import peak_signal_noise_ratio, structural_similarity
-from scipy.ndimage import gaussian_filter
-import matplotlib.pyplot as plt
-from skimage import exposure
 import cv2
 import math
 from math import log10
@@ -215,20 +206,21 @@ class ImageProcessingApp:
         self.median_filter_button = tk.Button(self.lab1_tab, text="Apply Median Filter", command=self.apply_median_filter)
         self.median_filter_button.grid(row=7, column=2, sticky="ew", padx=5, pady=5)
 
+        self.gauss_filter_button = tk.Button(self.lab1_tab, text="Apply Gauss Filter", command=self.apply_gauss_filter)
+        self.gauss_filter_button.grid(row=8, column=2, sticky="ew", padx=5, pady=5)
+
+        self.sequence_filter_button = tk.Button(self.lab1_tab, text="Apply Sequential Filters", command=self.open_filter_window)
+        self.sequence_filter_button.grid(row=9, column=2, sticky="ew", padx=5, pady=5)
+
         self.psnr_ssim_button = tk.Button(self.lab1_tab, text="Calculate PSNR and SSIM", command=self.calculate_metrics)
-        self.psnr_ssim_button.grid(row=8, column=2, sticky="ew", padx=5, pady=5)
+        self.psnr_ssim_button.grid(row=10, column=2, sticky="ew", padx=5, pady=5)
 
         self.extract_object_button = tk.Button(self.lab1_tab, text="Extract Object", command=self.extract_object)
-        self.extract_object_button.grid(row=9, column=2, sticky="ew", padx=5, pady=5)
+        self.extract_object_button.grid(row=11, column=2, sticky="ew", padx=5, pady=5)
         
         self.reduce_brightness_button = tk.Button(self.lab1_tab, text="Reduce Brightness", command=self.reduce_brightness)
-        self.reduce_brightness_button.grid(row=10, column=2, sticky="ew", padx=5, pady=5)
+        self.reduce_brightness_button.grid(row=12, column=2, sticky="ew", padx=5, pady=5)
         
-        self.sequence_filter_button = tk.Button(self.lab1_tab, text="Apply Sequential Filters", command=self.open_filter_window)
-        self.sequence_filter_button.grid(row=11, column=2, sticky="ew", padx=5, pady=5)
-        
-        self.gauss_filter_button = tk.Button(self.lab1_tab, text="Apply Gauss Filter", command=self.apply_gauss_filter)
-        self.gauss_filter_button.grid(row=12, column=2, sticky="ew", padx=5, pady=5)
         
         self.histogram_equalization_button = tk.Button(self.lab1_tab, text="Histogram equalization", command=self.apply_histogram_equalization)
         self.histogram_equalization_button.grid(row=13, column=2, sticky="ew", padx=5, pady=5)
@@ -241,6 +233,9 @@ class ImageProcessingApp:
         self.gaussian_noise_button = tk.Button(self.lab1_tab, text="Add Gaussian Noise", command=self.add_gaussian_noise)
         self.gaussian_noise_button.grid(row=15, column=2, sticky="ew", padx=5, pady=5)
 
+        # Add the reset button in the LAB1 tab
+        self.reset_button = tk.Button(self.lab1_tab, text="Reset Image", command=self.reset_image)
+        self.reset_button.grid(row=16, column=2, sticky="ew", padx=5, pady=5)
 
     ## biến lab 1
         self.original_img = None
@@ -262,7 +257,7 @@ class ImageProcessingApp:
         self.img_button = tk.Button(self.lab2_tab, text="Browse", command=self.load_image)
         self.img_button.grid(row=0, column=2, padx=5, pady=5)
 
-        self.prewitt_edge_detection_button = tk.Button(self.lab2_tab, text="prewitt edge detection", command=self.apply_prewitt_edge_detection)
+        self.prewitt_edge_detection_button = tk.Button(self.lab2_tab, text="Prewitt edge detection", command=self.apply_prewitt_edge_detection)
         self.prewitt_edge_detection_button.grid(row=5, column=2, sticky="ew", padx=5, pady=5)
         
         self.prewitt_edge_detection_button = tk.Button(self.lab2_tab, text="Add noise and Detect Canny", command=self.apply_add_noise_and_detect_canny)
@@ -289,6 +284,10 @@ class ImageProcessingApp:
         self.threshold2_label.grid(row=4, column=2, padx=5, pady=5, sticky="e")
         self.threshold2_entry = tk.Entry(self.lab2_tab)
         self.threshold2_entry.grid(row=4, column=3, padx=5, pady=5)
+
+        # Add the reset button in the LAB2 tab
+        self.reset_button_lab2 = tk.Button(self.lab2_tab, text="Reset Image", command=self.reset_image_lab2)
+        self.reset_button_lab2.grid(row=10, column=2, sticky="ew", padx=5, pady=5)
     ################################################################################################################################
     ####################################################LAB3#######################################################################
         self.image_panel_lab3 = tk.Label(self.lab3_tab)
@@ -308,6 +307,9 @@ class ImageProcessingApp:
         self.tinh_PSNR_button = tk.Button(self.lab3_tab, text="Calculate PSNR", command=self.tinh_PSNR)
         self.tinh_PSNR_button.grid(row=6, column=2, sticky="ew", padx=5, pady=5)
 
+        # Add the reset button in the LAB3 tab
+        self.reset_button_lab3 = tk.Button(self.lab3_tab, text="Reset Image", command=self.reset_image_lab3)
+        self.reset_button_lab3.grid(row=7, column=2, sticky="ew", padx=5, pady=5)
        
     #############################################################################################################################
     
@@ -378,15 +380,15 @@ class ImageProcessingApp:
     def apply_mean_filter(self):
         if self.processed_img is not None:
             kernel_size = int(self.filter_size_entry.get() or 3)
-            filtered_img = np.array(self.original_img)
-            filtered_img = mean_filter(filtered_img, kernel_size)
+            filtered_img = mean_filter(self.processed_img, kernel_size)
+            self.processed_img = filtered_img
             self.show_image(filtered_img)
 
     def apply_median_filter(self):
         if self.processed_img is not None:
             kernel_size = int(self.filter_size_entry.get() or 3)
-            filtered_img = np.array(self.original_img)
-            filtered_img = median_filter(filtered_img, kernel_size)
+            filtered_img = median_filter(self.processed_img, kernel_size)
+            self.processed_img = filtered_img
             self.show_image(filtered_img)
 
     def calculate_metrics(self):
@@ -542,6 +544,22 @@ class ImageProcessingApp:
             noisy_img = (noisy_img * 255).astype(np.uint8)  # chuyển đổi sang uint8
             self.processed_img = noisy_img  # cập nhật processed_img với ảnh có nhiễu
             self.show_image(noisy_img)  # hiển thị ảnh
+
+    # Implement the reset_image function
+    def reset_image(self):
+        if self.original_img:
+            self.processed_img = np.array(self.original_img)
+            self.show_image(self.processed_img)
+
+    def reset_image_lab2(self):
+        if self.image_original_lab2:
+            self.processed_img = np.array(self.image_original_lab2)
+            self.show_image(self.processed_img)
+
+    def reset_image_lab3(self):
+        if self.image_original_lab3:
+            self.processed_img = np.array(self.image_original_lab3)
+            self.show_image(self.processed_img)
 ################################################################################################################################
 ######################################################### LAB 2 ###############################################################
 
@@ -617,9 +635,11 @@ class ImageProcessingApp:
         decompressed_image = jpeg_decompression(compressed_image, quant_matrix)
 
         # Lưu ảnh
-        cv2.imwrite('compressed_image.jpg', decompressed_image)
+        cv2.imwrite('compressed_image.jpg', compressed_image)
+        cv2.imwrite('decompressed_image.jpg', decompressed_image)
         cv2.imshow('Original', image)
         cv2.imshow('Decompressed', decompressed_image)
+        cv2.imshow('Compressed', compressed_image)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
     
